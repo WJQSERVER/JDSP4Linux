@@ -27,6 +27,7 @@ jobs:
       run: |
         apt update
         apt upgrade -y git
+        apt full-upgrade -y
     
     - uses: actions/checkout@v4
       with:
