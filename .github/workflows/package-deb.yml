@@ -12,53 +12,6 @@ on:
      - prereleased
 
 jobs:
-  build-pulse-amd64:
-    runs-on: ubuntu-22.04
-    container: ubuntu:22.04
-    strategy:
-      matrix:
-        flavor: [full, headless]
-
-    steps:
-    - name: Setup APT
-      run:  echo 'APT::Acquire::Retries "4";' > /etc/apt/apt.conf.d/80-retries
-    
-    - name: Run APT updates
-      run: |
-        apt update
-        apt upgrade -y git
-        apt full-upgrade -y
-    
-    - uses: actions/checkout@v4
-      with:
-        ref: 'master'
-        submodules: 'recursive'
- 
-    - name: Install dependencies (PulseAudio flavor)
-      run: |
-        export PKG_CONFIG_PATH="/usr/lib/pkgconfig:$PATH"
-        echo 'tzdata tzdata/Areas select Europe' | debconf-set-selections
-        echo 'tzdata tzdata/Zones/Europe select Paris' | debconf-set-selections
-        DEBIAN_FRONTEND="noninteractive" 
-        apt install -y tree make gcc g++ lftp pkg-config libarchive-dev qt6-base-private-dev qt6-base-dev libqt6svg6-dev libgl-dev libqt6svg6-dev libglibmm-2.4-dev libglib2.0-dev libpulse-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-     
-    - name: Initialize project (PulseAudio/full)
-      if: matrix.flavor == 'full'
-      run: qmake6 JDSP4Linux.pro "CONFIG += CI" "CONFIG += USE_PULSEAUDIO"
-
-    - name: Initialize project (PulseAudio/headless)
-      if: matrix.flavor == 'headless'
-      run: qmake6 JDSP4Linux.pro "CONFIG += CI" "CONFIG += USE_PULSEAUDIO" "CONFIG+=HEADLESS"
-
-    - name: Build
-      run: |
-        make
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: jamesdsp-pulse-${{ matrix.flavor }}_portable_linux64
-        path: src/jamesdsp
         
   build-pipewire-amd64:
     runs-on: ubuntu-22.04
@@ -110,10 +63,10 @@ jobs:
     
   build-deb-amd64:
     runs-on: ubuntu-22.04
-    needs: [build-pulse-amd64, build-pipewire-amd64]
+    needs: [build-pipewire-amd64]
     strategy:
       matrix:
-        flavor: [pulse, pipewire]
+        flavor: [pipewire]
     
     steps:
     - uses: actions/checkout@v4
@@ -157,7 +110,7 @@ jobs:
     needs: [build-deb-amd64]
     strategy:
       matrix:
-        flavor: [pulse, pipewire]
+        flavor: [pipewire]
         
     if: github.event_name == 'release' || github.event_name == 'workflow_dispatch' 
     
